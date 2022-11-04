@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator typegraphql {
+  provider = "typegraphql-prisma"
+}
+
+model Venue {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  city      String
+  state     String
+  zip       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  events    Event[]
+}
+
+model Event {
+  id          String          @id @default(uuid())
+  name        String
+  description String          @db.VarChar(255)
+  date        DateTime
+  url         String
+  venue       Venue?          @relation(fields: [venueId], references: [id])
+  venueId     String?
+  artists     ArtistOnEvent[]
+  updatedAt   DateTime        @updatedAt
+  createdAt   DateTime        @default(now())
+}
+
+model Artist {
+  id        String          @id @default(uuid())
+  spotifyId String          @unique
+  events    ArtistOnEvent[]
+  trackings TrackedArtist[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model Config {
+  id                 String   @id @default(uuid())
+  enableEmail        Boolean  @default(false)
+  enableNotification Boolean  @default(false)
+  user               User     @relation(fields: [userId], references: [id])
+  userId             String   @unique
+  updatedAt          DateTime @updatedAt
+  createdAt          DateTime @default(now())
+}
+
+model User {
+  id             String          @id @default(uuid())
+  spotifyId      String          @unique
+  trackedArtists TrackedArtist[]
+  config         Config?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model ArtistOnEvent {
+  artist    Artist   @relation(fields: [artistId], references: [id])
+  artistId  String
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   String
+  createdAt DateTime @default(now())
+
+  @@id([artistId, eventId])
+}
+
+model TrackedArtist {
+  user      User     @relation(fields: [userId], references: [spotifyId])
+  userId    String
+  artist    Artist   @relation(fields: [artistId], references: [spotifyId])
+  artistId  String
+  createdAt DateTime @default(now())
+
+  @@id([userId, artistId])
+}
